@@ -704,7 +704,9 @@ DatabaseController.prototype.find = function(className, query, {
 } = {}) {
   let isMaster = acl === undefined;
   let aclGroup = acl || [];
-  let op = typeof query.objectId == 'string' && Object.keys(query).length === 1 ? 'get' : 'find';
+  const isIdMatchQuery = query.objectId && (typeof query.objectId == 'string'
+    || !_.some(query.objectId, (value, key) => {return !_.includes(['$in','$eq'], key);}));
+  let op = isIdMatchQuery ? 'get' : 'find';
   let classExists = true;
   return this.loadSchema()
   .then(schemaController => {
