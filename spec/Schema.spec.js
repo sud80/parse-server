@@ -163,7 +163,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it('can add classes without needing an object', done => {
+  it_exclude_dbs(['postgres'])('can add classes without needing an object', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('NewClass', {
       foo: {type: 'String'}
