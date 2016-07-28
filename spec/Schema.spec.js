@@ -163,7 +163,42 @@ describe('SchemaController', () => {
     });
   });
 
-  it('can add classes without needing an object', done => {
+  it_exclude_dbs(['postgres'])('class-level permissions test get with equalTo', (done) => {
+    var obj;
+    createTestUser()
+    .then(user => {
+      return config.database.loadSchema()
+      // Create a valid class
+      .then(schema => schema.validateObject('Stuff', {foo: 'bar'}))
+      .then(schema => {
+        return schema.setPermissions('Stuff', {
+          'create': {'*': true},
+          'find': {},
+          'get': {'*': true}
+        });
+      }).then((schema) => {
+        obj = new Parse.Object('Stuff');
+        obj.set('foo', 'bar');
+        return obj.save();
+      }).then((o) => {
+        obj = o;
+        var query = new Parse.Query('Stuff');
+        return query.find();
+      }).then((results) => {
+        fail('Class permissions should have rejected this query.');
+        done();
+      }, (e) => {
+        return new Parse.Query('Stuff').containedIn('objectId', [obj.id]).first().then((o) => {
+          done();
+        }, (e) => {
+          fail('Class permissions should have allowed this get query');
+          done();
+        });
+      });
+    });
+  });
+
+  it_exclude_dbs(['postgres'])('can add classes without needing an object', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('NewClass', {
       foo: {type: 'String'}
