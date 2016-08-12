@@ -165,12 +165,6 @@ function logTrigger(triggerType, className, input) {
 }
 
 function logTriggerSuccess(triggerType, className, input, result) {
-  logger.info(`${triggerType} triggered for ${className}\nInput: ${JSON.stringify(input)}\nResult: ${JSON.stringify(result)}`, {
-    className, 
-    triggerType,
-    input,
-    result
-  });
 }
 
 function logTriggerError(triggerType, className, input, error) {
