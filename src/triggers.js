@@ -196,14 +196,7 @@ function logTriggerAfterHook(triggerType, className, input, auth) {
   });
 }
 
-function logTriggerSuccessBeforeHook(triggerType, className, input, result, auth) {
-  const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
-  const cleanResult = logger.truncateLogMessage(JSON.stringify(result));
-  logger.info(`${triggerType} triggered for ${className} for user ${userIdForLog(auth)}:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`, {
-    className,
-    triggerType,
-    user: userIdForLog(auth)
-  });
+function logTriggerSuccess(triggerType, className, input, result) {
 }
 
 function logTriggerErrorBeforeHook(triggerType, className, input, auth, error) {
