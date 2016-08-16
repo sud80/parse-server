@@ -157,11 +157,13 @@ function logTrigger(triggerType, className, input) {
   if (triggerType.indexOf('after') != 0) {
     return;
   }
+  /*
   logger.info(`${triggerType} triggered for ${className}\nInput: ${JSON.stringify(input)}`, {
     className, 
     triggerType,
     input
   });
+  */
 }
 
 function logTriggerSuccess(triggerType, className, input, result) {
