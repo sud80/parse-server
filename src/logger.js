@@ -15,30 +15,14 @@ const JSON_LOGS = process.env.JSON_LOGS || false;
 let currentLogsFolder = LOGS_FOLDER;
 
 function generateTransports(level, options = {}) {
-  let transports = [
-    new (DailyRotateFile)(
-      Object.assign({
-        filename: 'parse-server.info',
-        dirname: currentLogsFolder,
-        name: 'parse-server',
-        level: level
-      }, options)
-    ),
-    new (DailyRotateFile)(
-      Object.assign({
-          filename: 'parse-server.err',
-          dirname: currentLogsFolder,
-          name: 'parse-server-error',
-          level: 'error'
-        }
-      ), options)
-  ];
+  let transports = [];
   if (!process.env.TESTING || process.env.VERBOSE) {
     transports = [
       new (winston.transports.Console)(
         Object.assign({
           colorize: true,
-          level: level
+          level: level,
+          timestamp: true,
         }, options)
       )
     ].concat(transports);
