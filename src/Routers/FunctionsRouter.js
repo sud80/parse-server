@@ -78,10 +78,9 @@ export class FunctionsRouter extends PromiseRouter {
 
       return new Promise(function (resolve, reject) {
         var response = FunctionsRouter.createResponseObject((result) => {
-          logger.info(`Ran cloud function ${req.params.functionName} with:\nInput: ${JSON.stringify(params)}\nResult: ${JSON.stringify(result.response.result)}`, {
+          logger.info(`Ran cloud function ${req.params.functionName} with:\nInput: ${JSON.stringify(params)}`, {
             functionName: req.params.functionName,
             params,
-            result: result.response.resut
           });
           resolve(result);
         }, (error) => {
