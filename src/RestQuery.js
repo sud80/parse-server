@@ -224,7 +224,8 @@ RestQuery.prototype.replaceInQuery = function() {
   }
 
   let additionalOptions = {
-    redirectClassNameForKey: inQueryValue.redirectClassNameForKey
+    redirectClassNameForKey: inQueryValue.redirectClassNameForKey,
+    limit: inQueryValue.limit,
   };
 
   var subquery = new RestQuery(
@@ -322,7 +323,8 @@ RestQuery.prototype.replaceSelect = function() {
   }
 
   let additionalOptions = {
-    redirectClassNameForKey: selectValue.query.redirectClassNameForKey
+    redirectClassNameForKey: selectValue.query.redirectClassNameForKey,
+    limit: selectValue.query.limit,
   };
 
   var subquery = new RestQuery(
