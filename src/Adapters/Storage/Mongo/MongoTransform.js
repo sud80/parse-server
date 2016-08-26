@@ -107,7 +107,7 @@ const transformInteriorValue = restValue => {
   }
 
   // Handle normal objects by recursing
-  return _.mapValues(restValue, transformInteriorObject);
+  return _.mapValues(restValue, transformInteriorValue);
 }
 
 const valueAsDate = value => {
@@ -364,23 +364,6 @@ const addLegacyACL = restObject => {
 // A sentinel value that helper transformations return when they
 // cannot perform a transformation
 function CannotTransform() {}
-
-const transformInteriorObject = atom => {
-  // TODO: check validity harder for the __type-defined types
-  if (typeof atom === 'object' && atom && !(atom instanceof Date) && atom.__type === 'Pointer') {
-    return {
-      __type: 'Pointer',
-      className: atom.className,
-      objectId: atom.objectId
-    };
-  } else if (typeof atom === 'function' || typeof atom === 'symbol') {
-    throw new Parse.Error(Parse.Error.INVALID_JSON, `cannot transform value: ${atom}`);
-  } else if (BytesCoder.isValidJSON(atom)) {
-    return BytesCoder.JSONToDatabase(atom);
-  } else {
-    return atom;
-  }
-}
 
 const transformInteriorAtom = atom => {
   // TODO: check validity harder for the __type-defined types
