@@ -524,8 +524,8 @@ function keysForQuery(query) {
 
 // Returns a promise for a list of related ids given an owning id.
 // className here is the owning className.
-DatabaseController.prototype.relatedIds = function(className, key, owningId, findOptions = {}) {
-  return this.adapter.find(joinTableName(className, key), relationSchema, { owningId }, findOptions)
+DatabaseController.prototype.relatedIds = function(className, key, owningId) {
+  return this.adapter.find(joinTableName(className, key), relationSchema, { owningId }, {})
   .then(results => results.map(result => result.relatedId));
 };
 
@@ -617,7 +617,7 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
 
 // Modifies query so that it no longer has $relatedTo
 // Returns a promise that resolves when query is mutated
-DatabaseController.prototype.reduceRelationKeys = function(className, query, findOptions = {}) {
+DatabaseController.prototype.reduceRelationKeys = function(className, query) {
 
   if (query['$or']) {
     return Promise.all(query['$or'].map((aQuery) => {
@@ -630,7 +630,7 @@ DatabaseController.prototype.reduceRelationKeys = function(className, query, fin
     return this.relatedIds(
       relatedTo.object.className,
       relatedTo.key,
-      relatedTo.object.objectId, findOptions).then((ids) => {
+      relatedTo.object.objectId).then((ids) => {
         delete query['$relatedTo'];
         this.addInObjectIdsIds(ids, query);
         return this.reduceRelationKeys(className, query);
@@ -754,7 +754,7 @@ DatabaseController.prototype.find = function(className, query, {
         }
       });
       return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, op))
-      .then(() => this.reduceRelationKeys(className, query, {limit: limit}))
+      .then(() => this.reduceRelationKeys(className, query))
       .then(() => this.reduceInRelation(className, query, schemaController))
       .then(() => {
         if (!isMaster) {
