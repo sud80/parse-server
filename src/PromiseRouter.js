@@ -143,8 +143,9 @@ function makeExpressHandler(appId, promiseHandler) {
   let config = AppCache.get(appId);
   return function(req, res, next) {
     try {
+      let url;
       if (process.env.VERBOSE) {
-        let url = maskSensitiveUrl(req);
+        url = maskSensitiveUrl(req);
         let body = maskSensitiveBody(req);
         let stringifiedBody = JSON.stringify(body, null, 2);
         log.verbose(`REQUEST for [${req.method}] ${url}: ${stringifiedBody}`, {
