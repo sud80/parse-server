@@ -134,26 +134,29 @@ function makeExpressHandler(appId, promiseHandler) {
   let config = AppCache.get(appId);
   return function(req, res, next) {
     try {
-      let url = maskSensitiveUrl(req);
-      let body = maskSensitiveBody(req);
-      let stringifiedBody = JSON.stringify(body, null, 2);
-      log.verbose(`REQUEST for [${req.method}] ${url}: ${stringifiedBody}`, {
-        method: req.method,
-        url: url,
-        headers: req.headers,
-        body: body
-      });
+      if (process.env.VERBOSE) {
+        let url = maskSensitiveUrl(req);
+        let body = maskSensitiveBody(req);
+        let stringifiedBody = JSON.stringify(body, null, 2);
+        log.verbose(`REQUEST for [${req.method}] ${url}: ${stringifiedBody}`, {
+          method: req.method,
+          url: url,
+          headers: req.headers,
+          body: body
+        });
+      }
       promiseHandler(req).then((result) => {
         if (!result.response && !result.location && !result.text) {
           log.error('the handler did not include a "response" or a "location" field');
           throw 'control should not get here';
         }
-
-        let stringifiedResponse = JSON.stringify(result, null, 2);
-        log.verbose(
-          `RESPONSE from [${req.method}] ${url}: ${stringifiedResponse}`,
-          {result: result}
-        );
+        if (process.env.VERBOSE) {
+          let stringifiedResponse = JSON.stringify(result, null, 2);
+          log.verbose(
+            `RESPONSE from [${req.method}] ${url}: ${stringifiedResponse}`,
+            {result: result}
+          );
+        }
 
         var status = result.status || 200;
         res.status(status);
