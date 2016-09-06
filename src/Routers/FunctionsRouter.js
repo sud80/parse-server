@@ -78,7 +78,7 @@ export class FunctionsRouter extends PromiseRouter {
 
       return new Promise(function (resolve, reject) {
         var response = FunctionsRouter.createResponseObject((result) => {
-          logger.info(`Ran cloud function ${req.params.functionName} with:\nInput: ${JSON.stringify(params)}`, {
+          logger.info(`Ran cloud function ${req.params.functionName} with:\nInput: ${JSON.stringify(params)} \nUser: ${JSON.stringify(request.user)} \nMasterKey: ${request.master}`, {
             functionName: req.params.functionName,
             params,
           });
@@ -95,6 +95,10 @@ export class FunctionsRouter extends PromiseRouter {
         Parse.applicationId = req.config.applicationId;
         Parse.javascriptKey = req.config.javascriptKey;
         Parse.masterKey = req.config.masterKey;
+        logger.info(`Starting cloud function ${req.params.functionName} with:\nInput: ${JSON.stringify(params)} \nUser: ${JSON.stringify(request.user)} \nMasterKey: ${request.master}`, {
+          functionName: req.params.functionName,
+          params: params
+        });
         theFunction(request, response);
       });
     } else {
