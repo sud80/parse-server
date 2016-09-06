@@ -154,11 +154,11 @@ export class FunctionsRouter extends PromiseRouter {
             reject(e);
           }
         });
-        // Force the keys before the function calls.
+        // Force the keys before the function calls.x`
         Parse.applicationId = req.config.applicationId;
         Parse.javascriptKey = req.config.javascriptKey;
         Parse.masterKey = req.config.masterKey;
-        logger.info(`Starting cloud function ${req.params.functionName} with:\nInput: ${JSON.stringify(params)} \nUser: ${JSON.stringify(request.user)} \nMasterKey: ${request.master}`, {
+        logger.info(`Starting cloud function ${req.params.functionName} with:\nInput: ${JSON.stringify(params)} \nUser: ${request.user?request.user.id:'undefined'} \nMasterKey: ${request.master}`, {
           functionName: req.params.functionName,
           params: params
         });
