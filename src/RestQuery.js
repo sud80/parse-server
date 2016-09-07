@@ -3,8 +3,25 @@
 
 var SchemaController = require('./Controllers/SchemaController');
 var Parse = require('parse/node').Parse;
+var _ = require('lodash');
 
 import { default as FilesController } from './Controllers/FilesController';
+
+const constructKeys = (keys) => {
+  if (!_.isString(keys)) {
+    return _.isEmpty(keys) ? undefined : keys;
+  }
+  const parsedKeys = {};
+  if (!_.isEmpty(keys)) {
+    _.forEach(keys.split(','), key => {
+      const parts = key.split('.');
+      const top = parts.splice(0, 1);
+      const remaining = parts.join('.');
+      parsedKeys[top] = _.merge(parsedKeys[top] || {}, constructKeys(remaining));
+    });
+  }
+  return parsedKeys;
+};
 
 // restOptions can include:
 //   skip
@@ -55,10 +72,13 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
   for (var option in restOptions) {
     switch(option) {
     case 'keys':
-      this.keys = new Set(restOptions.keys.split(','));
-      this.keys.add('objectId');
-      this.keys.add('createdAt');
-      this.keys.add('updatedAt');
+      this.keys = constructKeys(restOptions.keys);
+      if (this.keys) {
+        this.keys.objectId = {};
+        this.keys.createdAt = {};
+        this.keys.updatedAt = {};
+        this.findOptions.fields = _.keys(this.keys);
+      }
       break;
     case 'count':
       this.doCount = true;
@@ -225,6 +245,7 @@ RestQuery.prototype.replaceInQuery = function() {
   let additionalOptions = {
     redirectClassNameForKey: inQueryValue.redirectClassNameForKey,
     limit: inQueryValue.limit,
+    keys: 'objectId',
   };
 
   var subquery = new RestQuery(
@@ -272,7 +293,8 @@ RestQuery.prototype.replaceNotInQuery = function() {
   }
 
   let additionalOptions = {
-    redirectClassNameForKey: notInQueryValue.redirectClassNameForKey
+    redirectClassNameForKey: notInQueryValue.redirectClassNameForKey,
+    keys: 'objectId',
   };
 
   var subquery = new RestQuery(
@@ -324,6 +346,7 @@ RestQuery.prototype.replaceSelect = function() {
   let additionalOptions = {
     redirectClassNameForKey: selectValue.query.redirectClassNameForKey,
     limit: selectValue.query.limit,
+    keys: 'objectId',
   };
 
   var subquery = new RestQuery(
@@ -371,7 +394,8 @@ RestQuery.prototype.replaceDontSelect = function() {
                           'improper usage of $dontSelect');
   }
   let additionalOptions = {
-    redirectClassNameForKey: dontSelectValue.query.redirectClassNameForKey
+    redirectClassNameForKey: dontSelectValue.query.redirectClassNameForKey,
+    keys: 'objectId',
   };
 
   var subquery = new RestQuery(
@@ -412,19 +436,6 @@ RestQuery.prototype.runFind = function() {
 
     this.config.filesController.expandFilesInObject(this.config, results);
 
-    if (this.keys) {
-      var keySet = this.keys;
-      results = results.map((object) => {
-        var newObject = {};
-        for (var key in object) {
-          if (keySet.has(key)) {
-            newObject[key] = object[key];
-          }
-        }
-        return newObject;
-      });
-    }
-
     if (this.redirectClassName) {
       for (var r of results) {
         r.className = this.redirectClassName;
@@ -456,7 +467,7 @@ RestQuery.prototype.handleInclude = function() {
   }
 
   var pathResponse = includePath(this.config, this.auth,
-                                 this.response, this.include[0]);
+                                 this.response, this.include[0], this.keys);
   if (pathResponse.then) {
     return pathResponse.then((newResponse) => {
       this.response = newResponse;
@@ -474,7 +485,7 @@ RestQuery.prototype.handleInclude = function() {
 // Adds included values to the response.
 // Path is a list of field names.
 // Returns a promise for an augmented response.
-function includePath(config, auth, response, path) {
+function includePath(config, auth, response, path, keys) {
   var pointers = findPointers(response.results, path);
   if (pointers.length == 0) {
     return response;
@@ -491,8 +502,14 @@ function includePath(config, auth, response, path) {
   }
 
   let queryPromises = Object.keys(pointersHash).map((className) => {
+    _.forEach(path, p => {
+      if (!keys) {
+        return false;
+      }
+      keys = keys[p];
+    });
     var where = {'objectId': {'$in': pointersHash[className]}};
-    var query = new RestQuery(config, auth, className, where);
+    var query = new RestQuery(config, auth, className, where, {keys});
     return query.execute().then((results) => {
       results.className = className;
       return Promise.resolve(results);

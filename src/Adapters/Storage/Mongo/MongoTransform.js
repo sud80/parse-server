@@ -12,7 +12,7 @@ const transformKey = (className, fieldName, schema) => {
     case 'sessionToken': return '_session_token';
   }
 
-  if (schema.fields[fieldName] && schema.fields[fieldName].__type == 'Pointer') {
+  if (schema.fields[fieldName] && schema.fields[fieldName].type == 'Pointer') {
     fieldName = '_p_' + fieldName;
   }
 
