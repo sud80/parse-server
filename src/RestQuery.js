@@ -73,7 +73,7 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
     switch(option) {
     case 'keys':
       this.keys = constructKeys(restOptions.keys);
-      if (this.keys) {
+      if (this.keys && !this.keys['*']) {
         this.keys.objectId = {};
         this.keys.createdAt = {};
         this.keys.updatedAt = {};
