@@ -158,7 +158,7 @@ export class FunctionsRouter extends PromiseRouter {
         Parse.applicationId = req.config.applicationId;
         Parse.javascriptKey = req.config.javascriptKey;
         Parse.masterKey = req.config.masterKey;
-        logger.info(`Starting cloud function ${req.params.functionName} with:\nInput: ${JSON.stringify(params)} \nUser: ${request.user?request.user.id:'undefined'} \nMasterKey: ${request.master}`, {
+        logger.info(`Starting cloud function ${req.params.functionName} with:\nInput: ${JSON.stringify(params)} \nUser: ${userString} \nMasterKey: ${request.master}`, {
           functionName: req.params.functionName,
           params: params
         });
