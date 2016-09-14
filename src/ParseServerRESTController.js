@@ -67,7 +67,6 @@ function ParseServerRESTController(applicationId, router) {
           body: data,
           config,
           auth,
-          useMasterKey: true,
           info: {
             applicationId: applicationId,
             sessionToken: options.sessionToken
