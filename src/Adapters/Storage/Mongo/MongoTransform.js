@@ -190,7 +190,8 @@ function transformQueryKeyValue(className, key, value, schema) {
   if (transformTopLevelAtom(value) !== CannotTransform) {
     return {key, value: transformTopLevelAtom(value)};
   } else {
-    throw new Parse.Error(Parse.Error.INVALID_JSON, `You cannot use ${value} as a query parameter.`);
+    throw new Parse.Error(Parse.Error.INVALID_JSON, `You cannot use ${JSON.stringify(value)} as a query parameter ` +
+      `${key} ${className}.`);
   }
 }
 
