@@ -605,7 +605,7 @@ RestWrite.prototype.handleInstallation = function() {
       'installationId': this.data.installationId
     });
   }
-  if (this.data.deviceToken) {
+  if (_.isString(this.data.deviceToken)) {
     orQueries.push({'deviceToken': this.data.deviceToken});
   }
 
