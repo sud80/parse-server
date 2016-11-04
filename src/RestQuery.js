@@ -346,7 +346,7 @@ RestQuery.prototype.replaceSelect = function() {
   let additionalOptions = {
     redirectClassNameForKey: selectValue.query.redirectClassNameForKey,
     limit: selectValue.query.limit,
-    keys: 'objectId',
+    keys: `objectId,${selectValue.key}`,
   };
 
   var subquery = new RestQuery(
@@ -395,7 +395,7 @@ RestQuery.prototype.replaceDontSelect = function() {
   }
   let additionalOptions = {
     redirectClassNameForKey: dontSelectValue.query.redirectClassNameForKey,
-    keys: 'objectId',
+    keys: `objectId,${dontSelectValue.key}`,
   };
 
   var subquery = new RestQuery(
