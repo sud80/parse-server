@@ -283,74 +283,99 @@ class SchemaController {
   }
 
   reloadData(options = {clearCache: false}) {
-    if (options.clearCache) {
-      this._cache.clear();
-    }
     if (this.reloadDataPromise && !options.clearCache) {
       return this.reloadDataPromise;
     }
-    this.data = {};
-    this.perms = {};
-    this.reloadDataPromise = this.getAllClasses(options)
-    .then(allSchemas => {
-      allSchemas.forEach(schema => {
-        this.data[schema.className] = injectDefaultSchema(schema).fields;
-        this.perms[schema.className] = schema.classLevelPermissions;
-      });
+    this.reloadDataPromise = Promise.resolve()
+      .then(() => {
+        if (options.clearCache) {
+          return this._cache.clear().then(() => {});
+        }
+        return this._cache.getSchemaInfo()
+      })
+      .then(schemaInfo => {
+        if (schemaInfo) {
+          return schemaInfo;
+        }
+        return this.getAllClasses(options)
+          .then(allSchemas => {
+            const data = {};
+            const perms = {}
+            allSchemas.forEach(schema => {
+              data[schema.className] = injectDefaultSchema(schema).fields;
+              perms[schema.className] = schema.classLevelPermissions;
+            });
 
-      // Inject the in-memory classes
-      volatileClasses.forEach(className => {
-        this.data[className] = injectDefaultSchema({
-          className,
-          fields: {},
-          classLevelPermissions: {}
-        });
+            // Inject the in-memory classes
+            volatileClasses.forEach(className => {
+              data[className] = injectDefaultSchema({
+                className,
+                fields: {},
+                classLevelPermissions: {}
+              });
+            });
+            const schemaInfo = {data: Object.freeze(data), perms: Object.freeze(perms)};
+            this._cache.setSchemaInfo(schemaInfo);
+            return schemaInfo;
+          });
+      })
+      .then(schemaInfo => {
+        this.data = schemaInfo.data;
+        this.perms = schemaInfo.perms;
+        delete this.reloadDataPromise;
+      }, (err) => {
+        delete this.reloadDataPromise;
+        throw err;
       });
-      delete this.reloadDataPromise;
-    }, (err) => {
-      delete this.reloadDataPromise;
-      throw err;
-    });
     return this.reloadDataPromise;
   }
 
   getAllClasses(options = {clearCache: false}) {
-    if (options.clearCache) {
-      this._cache.clear();
-    }
-    return this._cache.getAllClasses().then((allClasses) => {
-      if (allClasses && allClasses.length && !options.clearCache) {
-        return Promise.resolve(allClasses);
-      }
-      return this._dbAdapter.getAllClasses()
-        .then(allSchemas => allSchemas.map(injectDefaultSchema))
-        .then(allSchemas => {
-          return this._cache.setAllClasses(allSchemas).then(() => {
-            return allSchemas;
-          });
-        })
-    });
+    return Promise.resolve()
+      .then(() => {
+        if (options.clearCache) {
+          return this._cache.clear();
+        }
+      })
+      .then(() => this._cache.getAllClasses())
+      .then((allClasses) => {
+        if (allClasses && allClasses.length && !options.clearCache) {
+          return Promise.resolve(allClasses);
+        }
+        return this._dbAdapter.getAllClasses()
+          .then(allSchemas => allSchemas.map(injectDefaultSchema))
+          .then(allSchemas => {
+            return this._cache.setAllClasses(Object.freeze(allSchemas)).then(() => {
+              return allSchemas;
+            });
+          })
+      });
   }
 
   getOneSchema(className, allowVolatileClasses = false, options = {clearCache: false}) {
-    if (options.clearCache) {
-      this._cache.clear();
-    }
-    if (allowVolatileClasses && volatileClasses.indexOf(className) > -1) {
-    	return Promise.resolve(this.data[className]);
-    }
-    return this._cache.getOneSchema(className).then((cached) => {
-      if (cached && !options.clearCache) {
-        return Promise.resolve(cached);
-      }
-      return this._dbAdapter.getClass(className)
-      .then(injectDefaultSchema)
-      .then((result) => {
-        return this._cache.setOneSchema(className, result).then(() => {
-          return result;
-        })
+    return Promise.resolve()
+      .then(() => {
+        if (options.clearCache) {
+          return this._cache.clear();
+        }
+      })
+      .then(() => {
+        if (allowVolatileClasses && volatileClasses.indexOf(className) > -1) {
+          return Promise.resolve(this.data[className]);
+        }
+        return this._cache.getOneSchema(className).then((cached) => {
+          if (cached && !options.clearCache) {
+            return Promise.resolve(cached);
+          }
+          return this._dbAdapter.getClass(className)
+            .then(injectDefaultSchema)
+            .then((result) => {
+              return this._cache.setOneSchema(className, result).then(() => {
+                return result;
+              })
+            });
+        });
       });
-    });
   }
 
   // Create a new class that includes the three default fields.
@@ -369,8 +394,7 @@ class SchemaController {
     return this._dbAdapter.createClass(className, convertSchemaToAdapterSchema({ fields, classLevelPermissions, className }))
     .then(convertAdapterSchemaToParseSchema)
     .then((res) => {
-      this._cache.clear();
-      return res;
+      return this._cache.clear().then(() => res);
     })
     .catch(error => {
       if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
@@ -581,9 +605,8 @@ class SchemaController {
           throw new Parse.Error(Parse.Error.INVALID_JSON, `Could not add field ${fieldName}`);
         }
         // Remove the cached schema
-        this._cache.clear();
-        return this;
-      });
+        return this._cache.clear();
+      }).then(() => this)
     });
   }
 
@@ -624,9 +647,8 @@ class SchemaController {
         .then(() => database.adapter.deleteClass(`_Join:${fieldName}:${className}`));
       }
       return database.adapter.deleteFields(className, schema, [fieldName]);
-    }).then(() => {
-      this._cache.clear();
-    });
+    })
+    .then(() => this._cache.clear());
   }
 
   // Validates an object provided in REST format.

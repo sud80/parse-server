@@ -25,6 +25,7 @@ import { AnalyticsRouter }      from './Routers/AnalyticsRouter';
 import { ClassesRouter }        from './Routers/ClassesRouter';
 import { FeaturesRouter }       from './Routers/FeaturesRouter';
 import { InMemoryCacheAdapter } from './Adapters/Cache/InMemoryCacheAdapter';
+import { InMemoryObjectCacheAdapter } from './Adapters/Cache/InMemoryObjectCacheAdapter';
 import { AnalyticsController }  from './Controllers/AnalyticsController';
 import { CacheController }      from './Controllers/CacheController';
 import { AnalyticsAdapter }     from './Adapters/Analytics/AnalyticsAdapter';
@@ -189,6 +190,7 @@ class ParseServer {
     const loggerControllerAdapter = loadAdapter(loggerAdapter, FileLoggerAdapter);
     const emailControllerAdapter = loadAdapter(emailAdapter);
     const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId});
+    const schemaCacheControllerAdapter = loadAdapter(null, InMemoryObjectCacheAdapter, {appId: appId, ttl: schemaCacheTTL});
     const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);
 
     // We pass the options and the base class for the adatper,
@@ -199,7 +201,8 @@ class ParseServer {
     const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
     const liveQueryController = new LiveQueryController(liveQuery);
     const cacheController = new CacheController(cacheControllerAdapter, appId);
-    const databaseController = new DatabaseController(databaseAdapter, new SchemaCache(cacheController, schemaCacheTTL));
+    const databaseController = new DatabaseController(databaseAdapter,
+      new SchemaCache(schemaCacheControllerAdapter, schemaCacheTTL));
     const hooksController = new HooksController(appId, databaseController, webhookKey);
     const analyticsController = new AnalyticsController(analyticsControllerAdapter);
 
