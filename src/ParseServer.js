@@ -24,6 +24,7 @@ import { AnalyticsRouter }      from './Routers/AnalyticsRouter';
 import { ClassesRouter }        from './Routers/ClassesRouter';
 import { FeaturesRouter }       from './Routers/FeaturesRouter';
 import { InMemoryCacheAdapter } from './Adapters/Cache/InMemoryCacheAdapter';
+import { InMemoryObjectCacheAdapter } from './Adapters/Cache/InMemoryObjectCacheAdapter';
 import { AnalyticsController }  from './Controllers/AnalyticsController';
 import { CacheController }      from './Controllers/CacheController';
 import { AnalyticsAdapter }     from './Adapters/Analytics/AnalyticsAdapter';
@@ -183,11 +184,14 @@ class ParseServer {
     const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId});
     const cacheController = new CacheController(cacheControllerAdapter, appId);
 
+    const schemaCacheControllerAdapter = loadAdapter(null, InMemoryObjectCacheAdapter, {appId: appId, ttl: schemaCacheTTL});
+    const schemaCacheController = new CacheController(schemaCacheControllerAdapter, appId);
+
     const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);
     const analyticsController = new AnalyticsController(analyticsControllerAdapter);
 
     const liveQueryController = new LiveQueryController(liveQuery);
-    const databaseController = new DatabaseController(databaseAdapter, new SchemaCache(cacheController, schemaCacheTTL));
+    const databaseController = new DatabaseController(databaseAdapter, new SchemaCache(schemaCacheController, schemaCacheTTL));
     const hooksController = new HooksController(appId, databaseController, webhookKey);
 
     const dbInitPromise = databaseController.performInitizalization();

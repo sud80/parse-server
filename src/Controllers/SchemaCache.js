@@ -1,4 +1,5 @@
 const MAIN_SCHEMA = "__MAIN_SCHEMA";
+const SCHEMA_INFO = "__SCHEMA_INFO";
 const SCHEMA_CACHE_PREFIX = "__SCHEMA";
 const ALL_KEYS = "__ALL_KEYS";
 
@@ -37,6 +38,20 @@ export default class SchemaCache {
       return Promise.resolve(null);
     }
     return this.put(this.prefix+MAIN_SCHEMA, schema);
+  }
+
+  getSchemaInfo() {
+    if (!this.ttl) {
+      return Promise.resolve(null);
+    }
+    return this.cache.get(this.prefix+SCHEMA_INFO);
+  }
+
+  setSchemaInfo(info) {
+    if (!this.ttl) {
+      return Promise.resolve(null);
+    }
+    return this.put(this.prefix+SCHEMA_INFO, info);
   }
 
   setOneSchema(className, schema) {
