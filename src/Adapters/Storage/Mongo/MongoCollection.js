@@ -13,15 +13,16 @@ export default class MongoCollection {
   // none, then build the geoindex.
   // This could be improved a lot but it's not clear if that's a good
   // idea. Or even if this behavior is a good idea.
-  find(query, { skip, limit, sort, fields } = {}) {
-    return this._rawFind(query, { skip, limit, sort, fields })
+  find(query, { skip, limit, sort, fields, hint } = {}) {
+    return this._rawFind(query, { skip, limit, sort, fields, hint })
       .catch(error => {
         // Check for "no geoindex" error
         if (error.code != 17007 && !error.message.match(/unable to find index for .geoNear/)) {
           throw error;
         }
         // Figure out what key needs an index
-        let key = error.message.match(/field=([A-Za-z_0-9]+) /)[1];
+        let key = error.message.match(/field=([A-Za-z_0-9]+) /);
+        key = key && key[1]
         if (!key) {
           throw error;
         }
@@ -30,13 +31,13 @@ export default class MongoCollection {
         index[key] = '2d';
         return this._mongoCollection.createIndex(index)
           // Retry, but just once.
-          .then(() => this._rawFind(query, { skip, limit, sort, fields }));
+          .then(() => this._rawFind(query, { skip, limit, sort, fields, hint }));
       });
   }
 
-  _rawFind(query, { skip, limit, sort, fields } = {}) {
+  _rawFind(query, { skip, limit, sort, fields, hint } = {}) {
     return this._mongoCollection
-      .find(query, { skip, limit, sort, fields })
+      .find(query, { skip, limit, sort, fields, hint })
       .toArray();
   }
 

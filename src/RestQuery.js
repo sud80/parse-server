@@ -83,6 +83,7 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
     case 'count':
       this.doCount = true;
       break;
+    case 'hint':
     case 'skip':
     case 'limit':
       this.findOptions[option] = restOptions[option];
@@ -247,6 +248,7 @@ RestQuery.prototype.replaceInQuery = function() {
     redirectClassNameForKey: inQueryValue.redirectClassNameForKey,
     limit: inQueryValue.limit,
     keys: 'objectId',
+    hint: inQueryValue.hint,
   };
 
   var subquery = new RestQuery(
@@ -296,6 +298,7 @@ RestQuery.prototype.replaceNotInQuery = function() {
   let additionalOptions = {
     redirectClassNameForKey: notInQueryValue.redirectClassNameForKey,
     keys: 'objectId',
+    hint: notInQueryValue.hint,
   };
 
   var subquery = new RestQuery(
@@ -348,6 +351,7 @@ RestQuery.prototype.replaceSelect = function() {
     redirectClassNameForKey: selectValue.query.redirectClassNameForKey,
     limit: selectValue.query.limit,
     keys: `objectId,${selectValue.key}`,
+    hint: selectValue.hint,
   };
 
   var subquery = new RestQuery(
@@ -397,6 +401,7 @@ RestQuery.prototype.replaceDontSelect = function() {
   let additionalOptions = {
     redirectClassNameForKey: dontSelectValue.query.redirectClassNameForKey,
     keys: `objectId,${dontSelectValue.key}`,
+    hint: dontSelectValue.hint,
   };
 
   var subquery = new RestQuery(
