@@ -127,12 +127,13 @@ export function getValidator(functionName, applicationId) {
   return undefined;
 }
 
-export function getRequestObject(triggerType, auth, parseObject, originalParseObject, config) {
+export function getRequestObject(triggerType, auth, parseObject, originalParseObject, config, state) {
   var request = {
     triggerName: triggerType,
     object: parseObject,
     master: false,
-    log: config.loggerController
+    log: config.loggerController,
+    state,
   };
 
   if (originalParseObject) {
@@ -226,14 +227,14 @@ function logTriggerErrorBeforeHook(triggerType, className, input, auth, error) {
 // Resolves to an object, empty or containing an object key. A beforeSave
 // trigger will set the object key to the rest format object to save.
 // originalParseObject is optional, we only need that for before/afterSave functions
-export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObject, config) {
+export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObject, config, state) {
   if (!parseObject) {
     return Promise.resolve({});
   }
   return new Promise(function (resolve, reject) {
     var trigger = getTrigger(parseObject.className, triggerType, config.applicationId);
     if (!trigger) return resolve();
-    var request = getRequestObject(triggerType, auth, parseObject, originalParseObject, config);
+    var request = getRequestObject(triggerType, auth, parseObject, originalParseObject, config, state);
     var response = getResponseObject(request, (object) => {
       logTriggerSuccessBeforeHook(
           triggerType, parseObject.className, parseObject.toJSON(), object, auth);

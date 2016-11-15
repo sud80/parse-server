@@ -31,6 +31,8 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
   this.clientSDK = clientSDK;
   this.storage = {};
   this.runOptions = {};
+  this.triggerState = {};
+
   if (!query && data.objectId) {
     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'objectId is an invalid field name.');
   }
@@ -162,7 +164,7 @@ RestWrite.prototype.runBeforeTrigger = function() {
   updatedObject.set(this.sanitizedData());
 
   return Promise.resolve().then(() => {
-    return triggers.maybeRunTrigger(triggers.Types.beforeSave, this.auth, updatedObject, originalObject, this.config);
+    return triggers.maybeRunTrigger(triggers.Types.beforeSave, this.auth, updatedObject, originalObject, this.config, this.triggerState);
   }).then((response) => {
     if (response && response.object) {
       this.storage.fieldsChangedByTrigger = _.reduce(response.object, (result, value, key) => {
@@ -899,7 +901,7 @@ RestWrite.prototype.runAfterTrigger = function() {
   this.config.liveQueryController.onAfterSave(updatedObject.className, updatedObject, originalObject);
 
   // Run afterSave trigger
-  return triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, updatedObject, originalObject, this.config);
+  return triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, updatedObject, originalObject, this.config, this.triggerState);
 };
 
 // A helper to figure out what location this operation happens at.
