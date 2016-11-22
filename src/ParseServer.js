@@ -129,6 +129,7 @@ class ParseServer {
     emailVerifyTokenValidityDuration,
     accountLockout,
     cacheAdapter,
+    schemaCache,
     emailAdapter,
     publicServerURL,
     customPages = {
@@ -184,14 +185,19 @@ class ParseServer {
     const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId});
     const cacheController = new CacheController(cacheControllerAdapter, appId);
 
-    const schemaCacheControllerAdapter = loadAdapter(null, InMemoryObjectCacheAdapter, {appId: appId, ttl: schemaCacheTTL});
-    const schemaCacheController = new CacheController(schemaCacheControllerAdapter, appId);
+    if (!schemaCache) {
+      const schemaCacheControllerAdapter = loadAdapter(null, InMemoryObjectCacheAdapter, {
+        appId: appId,
+        ttl: schemaCacheTTL
+      });
+      schemaCache = new SchemaCache(schemaCacheControllerAdapter, schemaCacheTTL)
+    }
 
     const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);
     const analyticsController = new AnalyticsController(analyticsControllerAdapter);
 
     const liveQueryController = new LiveQueryController(liveQuery);
-    const databaseController = new DatabaseController(databaseAdapter, new SchemaCache(schemaCacheController, schemaCacheTTL));
+    const databaseController = new DatabaseController(databaseAdapter, schemaCache);
     const hooksController = new HooksController(appId, databaseController, webhookKey);
 
     const dbInitPromise = databaseController.performInitizalization();
@@ -210,6 +216,7 @@ class ParseServer {
       facebookAppIds: facebookAppIds,
       analyticsController: analyticsController,
       cacheController: cacheController,
+      schemaCache: schemaCache,
       filesController: filesController,
       pushController: pushController,
       loggerController: loggerController,
