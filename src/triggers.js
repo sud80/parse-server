@@ -77,17 +77,8 @@ export function _unregisterAll() {
 }
 
 export function getTrigger(className, triggerType, applicationId) {
-  if (!applicationId) {
-    throw "Missing ApplicationID";
-  }
-  var manager = _triggerStore[applicationId]
-  if (manager
-    && manager.Triggers
-    && manager.Triggers[triggerType]
-    && manager.Triggers[triggerType][className]) {
-    return manager.Triggers[triggerType][className];
-  }
-  return undefined;
+  var manager = _triggerStore[applicationId];
+  return manager && _triggerStore[applicationId].Triggers[triggerType][className]
 };
 
 export function triggerExists(className: string, type: string, applicationId: string): boolean {
