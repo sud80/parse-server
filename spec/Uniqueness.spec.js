@@ -11,7 +11,7 @@ describe('Uniqueness', function() {
     obj.save().then(() => {
       expect(obj.id).not.toBeUndefined();
       let config = new Config('test');
-      return config.database.adapter.ensureUniqueness('UniqueField', { fields: { unique: { __type: 'String' } } }, ['unique'])
+      return config.database.adapter.ensureUniqueness('UniqueField', { fields: { unique: { type: 'String' } } }, ['unique'])
     })
     .then(() => {
       let obj = new Parse.Object('UniqueField');
@@ -33,8 +33,8 @@ describe('Uniqueness', function() {
     .then(() => {
       let config = new Config('test');
       return config.database.adapter.ensureUniqueness('UniquePointer', { fields: {
-        string: { __type: 'String' },
-        ptr: { __type: 'Pointer', targetClass: 'UniquePointer' }
+        string: { type: 'String' },
+        ptr: { type: 'Pointer', targetClass: 'UniquePointer' }
       } }, ['ptr']);
     })
     .then(() => {
@@ -60,7 +60,7 @@ describe('Uniqueness', function() {
     Parse.Object.saveAll([o1, o2])
     .then(() => {
       let config = new Config('test');
-      return config.database.adapter.ensureUniqueness('UniqueFail', { fields: { key: { __type: 'String' } } }, ['key']);
+      return config.database.adapter.ensureUniqueness('UniqueFail', { fields: { key: { type: 'String' } } }, ['key']);
     })
     .catch(error => {
       expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
@@ -70,7 +70,7 @@ describe('Uniqueness', function() {
 
   it_exclude_dbs(['postgres'])('can do compound uniqueness', done => {
     let config = new Config('test');
-    config.database.adapter.ensureUniqueness('CompoundUnique', { fields: { k1: { __type: 'String' }, k2: { __type: 'String' } } }, ['k1', 'k2'])
+    config.database.adapter.ensureUniqueness('CompoundUnique', { fields: { k1: { type: 'String' }, k2: { type: 'String' } } }, ['k1', 'k2'])
     .then(() => {
       let o1 = new Parse.Object('CompoundUnique');
       o1.set('k1', 'v1');
