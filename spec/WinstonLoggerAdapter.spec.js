@@ -3,6 +3,7 @@
 var WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
 var Parse = require('parse/node').Parse;
 var request = require('request');
+import _ from 'lodash';
 
 describe('info logs', () => {
 
@@ -98,10 +99,44 @@ describe('verbose logs', () => {
     })
   });
 
+  it("should not log if verbose turned off", (done) => {
+    const now = Date.now();
+    let logCount;
+    let winstonLoggerAdapter;
+    reconfigureServer({ verbose: false })
+      .then(() => {
+        winstonLoggerAdapter = new WinstonLoggerAdapter();
+        return winstonLoggerAdapter.query({
+          from: new Date(now - 500),
+          size: 100,
+          level: 'verbose'
+        });
+      })
+      .then(results => {
+        logCount = _.size(results);
+        let obj = new Parse.Object('users');
+        obj.set('password', 'pw');
+        return obj.save();
+      })
+      .then(() => {
+        return winstonLoggerAdapter.query({
+          from: new Date(now - 500),
+          size: 100,
+          level: 'verbose'
+        });
+      })
+      .then((results) => {
+        expect(_.size(results)).toEqual(logCount);
+        done();
+      });
+  });
+
   it("should not mask information in non _User class", (done) => {
     let obj = new Parse.Object('users');
     obj.set('password', 'pw');
-    obj.save().then(() => {
+    reconfigureServer({ verbose: true })
+    .then(() => obj.save())
+    .then(() => {
       let winstonLoggerAdapter = new WinstonLoggerAdapter();
       return winstonLoggerAdapter.query({
         from: new Date(Date.now() - 500),
@@ -113,4 +148,5 @@ describe('verbose logs', () => {
       done();
     });
   });
+
 });

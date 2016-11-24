@@ -189,18 +189,15 @@ function userIdForLog(auth) {
 }
 
 function logTriggerAfterHook(triggerType, className, input, auth) {
-  /*
   const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
   logger.info(`${triggerType} triggered for ${className} for user ${userIdForLog(auth)}:\n  Input: ${cleanInput}`, {
     className,
     triggerType,
     user: userIdForLog(auth)
   });
-  */
 }
 
 function logTriggerSuccessBeforeHook(triggerType, className, input, result, auth) {
-  /*
   const cleanInput = logger.truncateLogMessage(JSON.stringify(input));
   const cleanResult = logger.truncateLogMessage(JSON.stringify(result));
   logger.info(`${triggerType} triggered for ${className} for user ${userIdForLog(auth)}:\n  Input: ${cleanInput}\n  Result: ${cleanResult}`, {
@@ -208,7 +205,6 @@ function logTriggerSuccessBeforeHook(triggerType, className, input, result, auth
     triggerType,
     user: userIdForLog(auth)
   });
-  */
 }
 
 function logTriggerErrorBeforeHook(triggerType, className, input, auth, error) {
@@ -236,8 +232,9 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
     if (!trigger) return resolve();
     var request = getRequestObject(triggerType, auth, parseObject, originalParseObject, config, state);
     var response = getResponseObject(request, (object) => {
-      logTriggerSuccessBeforeHook(
-          triggerType, parseObject.className, parseObject.toJSON(), object, auth);
+      if (config.logTriggerSuccess) {
+        logTriggerSuccessBeforeHook(triggerType, parseObject.className, parseObject.toJSON(), object, auth);
+      }
       resolve(object);
     }, (error) => {
       logTriggerErrorBeforeHook(
@@ -257,7 +254,9 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
     var triggerPromise = trigger(request, response);
     if(triggerType === Types.afterSave || triggerType === Types.afterDelete)
     {
-        logTriggerAfterHook(triggerType, parseObject.className, parseObject.toJSON(), auth);
+        if (config.logTriggerSuccess) {
+          logTriggerAfterHook(triggerType, parseObject.className, parseObject.toJSON(), auth);
+        }
         if(triggerPromise && typeof triggerPromise.then === "function") {
             return triggerPromise.then(resolve, resolve);
         }

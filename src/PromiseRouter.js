@@ -140,11 +140,11 @@ export default class PromiseRouter {
 // Express handlers should never throw; if a promise handler throws we
 // just treat it like it resolved to an error.
 function makeExpressHandler(appId, promiseHandler) {
-  let config = AppCache.get(appId);
+  let config = AppCache.get(appId) || {};
   return function(req, res, next) {
     try {
       let url;
-      if (process.env.VERBOSE) {
+      if (config.verbose) {
         url = maskSensitiveUrl(req);
         let body = maskSensitiveBody(req);
         let stringifiedBody = JSON.stringify(body, null, 2);
@@ -160,7 +160,7 @@ function makeExpressHandler(appId, promiseHandler) {
           log.error('the handler did not include a "response" or a "location" field');
           throw 'control should not get here';
         }
-        if (process.env.VERBOSE) {
+        if (config.verbose) {
           let stringifiedResponse = JSON.stringify(result, null, 2);
           log.verbose(
             `RESPONSE from [${req.method}] ${url}: ${stringifiedResponse}`,

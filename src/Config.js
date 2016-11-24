@@ -34,6 +34,8 @@ export class Config {
     this.fileKey = cacheInfo.fileKey;
     this.facebookAppIds = cacheInfo.facebookAppIds;
     this.allowClientClassCreation = cacheInfo.allowClientClassCreation;
+    this.logTriggerSuccess = cacheInfo.logTriggerSuccess;
+    this.verbose = cacheInfo.verbose;
 
     // Create a new DatabaseController per request
     if (cacheInfo.databaseController) {

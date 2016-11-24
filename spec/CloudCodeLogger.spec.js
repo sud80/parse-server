@@ -208,4 +208,35 @@ describe("Cloud Code Logger", () => {
             })
             .then(null, e => done.fail(JSON.stringify(e)));
     }).pend('needs more work.....');
+
+    it("should not expose log to trigger", (done) => {
+        var logController = new LoggerController(new WinstonLoggerAdapter());
+
+        Parse.Cloud.beforeSave("MyObject", (req, res) => {
+            req.log.info('beforeSave MyObject', 'info log', { info: 'some log' });
+            req.log.error('beforeSave MyObject', 'error log', { error: 'there was an error' });
+            res.success({});
+        });
+
+        let obj = new Parse.Object('MyObject');
+        reconfigureServer({ logTriggerSuccess: false })
+          .then(() => obj.save())
+          .then(() => {
+            return logController.getLogs({ from: Date.now() - 500, size: 1000 })
+          })
+          .then((res) => {
+            expect(res.length).not.toBe(0);
+            let lastLogs = res.slice(0, 3);
+            let errorMessage = lastLogs[0];
+            let infoMessage = lastLogs[1];
+            expect(errorMessage.level).toBe('error');
+            expect(errorMessage.error).toBe('there was an error');
+            expect(errorMessage.message).toBe('beforeSave MyObject error log');
+            expect(infoMessage.level).toBe('info');
+            expect(infoMessage.info).toBe('some log');
+            expect(infoMessage.message).toBe('beforeSave MyObject info log');
+            done();
+        });
+    });
+
 });

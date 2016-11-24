@@ -13,6 +13,23 @@ function updateTransports(options) {
   if (options) {
     let silent = options.silent;
     delete options.silent;
+
+    if (_.isNull(options.dirname)) {
+      delete transports['parse-server'];
+      delete transports['parse-server-error'];
+    } else if (!_.isUndefined(options.dirname)) {
+      transports['parse-server'] = new (DailyRotateFile)(
+        Object.assign({}, {
+          filename: 'parse-server.info',
+          name: 'parse-server',
+        }, options));
+      transports['parse-server-error'] = new (DailyRotateFile)(
+        Object.assign({}, {
+          filename: 'parse-server.err',
+          name: 'parse-server-error',
+        }, options, { level: 'error'}));
+    }
+
     transports.console = new (winston.transports.Console)(
       Object.assign({
         colorize: true,
