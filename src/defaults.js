@@ -30,4 +30,5 @@ export default {
   schemaCacheTTL: 5000, // in ms
   logTriggerSuccess: true,
   reuseSchemaCache: true,
+  supportOriginalObject: true,
 }

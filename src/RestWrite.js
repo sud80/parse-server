@@ -157,7 +157,7 @@ RestWrite.prototype.runBeforeTrigger = function() {
 
   let originalObject = null;
   let updatedObject = triggers.inflate(extraData, this.originalData);
-  if (this.query && this.query.objectId) {
+  if (this.config.supportOriginalObject && this.query && this.query.objectId) {
     // This is an update for existing object.
     originalObject = triggers.inflate(extraData, this.originalData);
   }
@@ -875,7 +875,7 @@ RestWrite.prototype.runAfterTrigger = function() {
 
   // Avoid doing any setup for triggers if there is no 'afterSave' trigger for this class.
   let hasAfterSaveHook = triggers.triggerExists(this.className, triggers.Types.afterSave, this.config.applicationId);
-  let hasLiveQuery = this.config.liveQueryController.hasLiveQuery(this.className);
+  let hasLiveQuery = this.config.liveQueryController && this.config.liveQueryController.hasLiveQuery(this.className);
   if (!hasAfterSaveHook && !hasLiveQuery) {
     return Promise.resolve();
   }
@@ -887,7 +887,7 @@ RestWrite.prototype.runAfterTrigger = function() {
 
   // Build the original object, we only do this for a update write.
   let originalObject;
-  if (this.query && this.query.objectId) {
+  if (this.config.supportOriginalObject && this.query && this.query.objectId) {
     originalObject = triggers.inflate(extraData, this.originalData);
   }
 
@@ -898,7 +898,9 @@ RestWrite.prototype.runAfterTrigger = function() {
   updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
 
   // Notifiy LiveQueryServer if possible
-  this.config.liveQueryController.onAfterSave(updatedObject.className, updatedObject, originalObject);
+  if (this.config.liveQueryController) {
+    this.config.liveQueryController.onAfterSave(updatedObject.className, updatedObject, originalObject);
+  }
 
   // Run afterSave trigger
   return triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, updatedObject, originalObject, this.config, this.triggerState);

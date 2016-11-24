@@ -138,13 +138,14 @@ class ParseServer {
       choosePassword: undefined,
       passwordResetSuccess: undefined
     },
-    liveQuery = {},
+    liveQuery,
     sessionLength = defaults.sessionLength, // 1 Year in seconds
     expireInactiveSessions = defaults.expireInactiveSessions,
     revokeSessionOnPasswordReset = defaults.revokeSessionOnPasswordReset,
     schemaCacheTTL = defaults.schemaCacheTTL, // cache for 5s
     logTriggerSuccess = defaults.logTriggerSuccess,
     reuseSchemaCache = defaults.reuseSchemaCache,
+    supportOriginalObject = defaults.supportOriginalObject,
     __indexBuildCompletionCallbackForTests = () => {},
   }) {
     // Initialize the node client SDK automatically
@@ -198,7 +199,10 @@ class ParseServer {
     const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);
     const analyticsController = new AnalyticsController(analyticsControllerAdapter);
 
-    const liveQueryController = new LiveQueryController(liveQuery);
+    let liveQueryController;
+    if (liveQuery) {
+      liveQueryController = new LiveQueryController(liveQuery);
+    }
     const databaseController = new DatabaseController(databaseAdapter, schemaCache);
     const hooksController = new HooksController(appId, databaseController, webhookKey);
 
@@ -243,7 +247,8 @@ class ParseServer {
       databaseController,
       schemaCacheTTL,
       logTriggerSuccess,
-      reuseSchemaCache
+      reuseSchemaCache,
+      supportOriginalObject,
     });
 
     // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability

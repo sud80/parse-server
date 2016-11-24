@@ -437,8 +437,63 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     });
   });
 
+  it('original object is not set on update with supportOriginalObject off', done => {
+    let triggerTime = 0;
+    // Register a mock beforeSave hook
+    Parse.Cloud.beforeSave('GameScore', (req, res) => {
+      let object = req.object;
+      expect(object instanceof Parse.Object).toBeTruthy();
+      expect(object.get('fooAgain')).toEqual('barAgain');
+      let originalObject = req.original;
+      if (triggerTime == 0) {
+        // No id/createdAt/updatedAt
+        expect(object.id).toBeUndefined();
+        expect(object.createdAt).toBeUndefined();
+        expect(object.updatedAt).toBeUndefined();
+        // Create
+        expect(object.get('foo')).toEqual('bar');
+        // Check the originalObject is undefined
+        expect(originalObject).toBeUndefined();
+      } else if (triggerTime == 1) {
+        // Update
+        expect(object.id).not.toBeUndefined();
+        expect(object.createdAt).not.toBeUndefined();
+        expect(object.updatedAt).not.toBeUndefined();
+        expect(object.get('foo')).toEqual('baz');
+        // Check the originalObject
+        expect(originalObject).toBeUndefined();
+      } else {
+        res.error();
+      }
+      triggerTime++;
+      res.success();
+    });
+
+    let obj = new Parse.Object('GameScore');
+    obj.set('foo', 'bar');
+    obj.set('fooAgain', 'barAgain');
+    return reconfigureServer({
+      // useful to flip to false for fine tuning :).
+      supportOriginalObject: false,
+    })
+      .then(() => obj.save())
+      .then(() => {
+        // We only update foo
+        obj.set('foo', 'baz');
+        return obj.save();
+      }).then(() => {
+        // Make sure the checking has been triggered
+        expect(triggerTime).toBe(2);
+        done();
+      }, error => {
+        fail(error);
+        done();
+      });
+  });
+
   it('original object is set on update', done => {
     let triggerTime = 0;
+
     // Register a mock beforeSave hook
     Parse.Cloud.beforeSave('GameScore', (req, res) => {
       let object = req.object;
@@ -477,7 +532,12 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     let obj = new Parse.Object('GameScore');
     obj.set('foo', 'bar');
     obj.set('fooAgain', 'barAgain');
-    obj.save().then(() => {
+    return reconfigureServer({
+      // useful to flip to false for fine tuning :).
+      supportOriginalObject: true,
+    })
+    .then(() => obj.save())
+    .then(() => {
       // We only update foo
       obj.set('foo', 'baz');
       return obj.save();
