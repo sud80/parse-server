@@ -144,6 +144,7 @@ class ParseServer {
     revokeSessionOnPasswordReset = defaults.revokeSessionOnPasswordReset,
     schemaCacheTTL = defaults.schemaCacheTTL, // cache for 5s
     logTriggerSuccess = defaults.logTriggerSuccess,
+    reuseSchemaCache = defaults.reuseSchemaCache,
     __indexBuildCompletionCallbackForTests = () => {},
   }) {
     // Initialize the node client SDK automatically
@@ -186,7 +187,7 @@ class ParseServer {
     const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId});
     const cacheController = new CacheController(cacheControllerAdapter, appId);
 
-    if (!schemaCache) {
+    if (!schemaCache || !reuseSchemaCache) {
       const schemaCacheControllerAdapter = loadAdapter(null, InMemoryObjectCacheAdapter, {
         appId: appId,
         ttl: schemaCacheTTL
@@ -241,7 +242,8 @@ class ParseServer {
       revokeSessionOnPasswordReset,
       databaseController,
       schemaCacheTTL,
-      logTriggerSuccess
+      logTriggerSuccess,
+      reuseSchemaCache
     });
 
     // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability

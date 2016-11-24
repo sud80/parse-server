@@ -29,4 +29,5 @@ export default {
   revokeSessionOnPasswordReset: true,
   schemaCacheTTL: 5000, // in ms
   logTriggerSuccess: true,
+  reuseSchemaCache: true,
 }

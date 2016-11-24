@@ -36,10 +36,12 @@ export class Config {
     this.allowClientClassCreation = cacheInfo.allowClientClassCreation;
     this.logTriggerSuccess = cacheInfo.logTriggerSuccess;
     this.verbose = cacheInfo.verbose;
+    this.database = cacheInfo.databaseController;
 
-    // Create a new DatabaseController per request
-    if (cacheInfo.databaseController) {
-      const schemaCache = new SchemaCache(cacheInfo.cacheController, cacheInfo.schemaCacheTTL);
+    if (cacheInfo.reuseSchemaCache) {
+      this.database = cacheInfo.databaseController
+    } else if (cacheInfo.databaseController) {
+      const schemaCache = new SchemaCache(cacheInfo.schemaCache.cache, cacheInfo.schemaCacheTTL);
       this.database = new DatabaseController(cacheInfo.databaseController.adapter, schemaCache);
     }
 
