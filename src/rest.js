@@ -116,6 +116,7 @@ function update(config, auth, className, objectId, restObject, clientSDK) {
     var originalRestObject;
     if (response && response.results && response.results.length) {
       originalRestObject = response.results[0];
+      originalRestObject.className = className;
     }
 
     var write = new RestWrite(config, auth, className, {objectId: objectId}, restObject, originalRestObject, clientSDK);

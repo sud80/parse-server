@@ -137,6 +137,16 @@ RestWrite.prototype.validateSchema = function() {
   return this.config.database.validateObject(this.className, this.data, this.query, this.runOptions);
 };
 
+RestWrite.prototype._getOriginalData = function() {
+  if (!this.originalData) {
+    this.originalData = {className: this.className};
+    if (this.query && this.query.objectId) {
+      this.originalData.objectId = this.query.objectId;
+    }
+  }
+  return this.originalData;
+};
+
 // Runs any beforeSave triggers against this operation.
 // Any change leads to our data being mutated.
 RestWrite.prototype.runBeforeTrigger = function() {
@@ -149,19 +159,15 @@ RestWrite.prototype.runBeforeTrigger = function() {
     return Promise.resolve();
   }
 
-  // Cloud code gets a bit of extra data for its objects
-  var extraData = {className: this.className};
-  if (this.query && this.query.objectId) {
-    extraData.objectId = this.query.objectId;
-  }
+  const originalData = this._getOriginalData();
+  let updatedObject = Parse.Object.fromJSON(originalData);
+  updatedObject.set(this.sanitizedData());
 
   let originalObject = null;
-  let updatedObject = triggers.inflate(extraData, this.originalData);
   if (this.config.supportOriginalObject && this.query && this.query.objectId) {
     // This is an update for existing object.
-    originalObject = triggers.inflate(extraData, this.originalData);
+    originalObject = Parse.Object.fromJSON(originalData);
   }
-  updatedObject.set(this.sanitizedData());
 
   return Promise.resolve().then(() => {
     return triggers.maybeRunTrigger(triggers.Types.beforeSave, this.auth, updatedObject, originalObject, this.config, this.triggerState);
@@ -880,20 +886,16 @@ RestWrite.prototype.runAfterTrigger = function() {
     return Promise.resolve();
   }
 
-  var extraData = {className: this.className};
-  if (this.query && this.query.objectId) {
-    extraData.objectId = this.query.objectId;
-  }
-
+  const originalData = this._getOriginalData();
   // Build the original object, we only do this for a update write.
   let originalObject;
   if (this.config.supportOriginalObject && this.query && this.query.objectId) {
-    originalObject = triggers.inflate(extraData, this.originalData);
+    originalObject = Parse.Object.fromJSON(originalData);
   }
 
   // Build the inflated object, different from beforeSave, originalData is not empty
   // since developers can change data in the beforeSave.
-  let updatedObject = triggers.inflate(extraData, this.originalData);
+  let updatedObject = Parse.Object.fromJSON(originalData);
   updatedObject.set(this.sanitizedData());
   updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
 
