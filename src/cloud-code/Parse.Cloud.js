@@ -51,4 +51,17 @@ ParseCloud._removeAllHooks = () => {
 
 ParseCloud.httpRequest = require("./httpRequest");
 
+//Supported configs
+// masterOnlyWriteFields - Set of fields which are only writable by master
+// immutableFields - Set of fields which are not mutable once the object is created.
+// lockDownPublicAccess - if true, will lock down public access of the object.
+const _classConfig = {};
+ParseCloud.setClassConfig = (className, config) => {
+  _classConfig[className] = Object.freeze(config);
+};
+
+ParseCloud.getClassConfig = (className) => {
+  return _classConfig[className];
+};
+
 module.exports = ParseCloud;

@@ -1230,4 +1230,76 @@ describe('Parse.ACL', () => {
 
     rest.create(config, auth.nobody(config), '_User', anonUser)
   })
+
+  it("should have only master key acl", function(done) {
+    const TestClassMA = Parse.Object.extend("TestClassMA");
+    Parse.Cloud.setClassConfig('TestClassMA', { lockDownPublicAccess: true });
+    var obj = new TestClassMA();
+    var obj2;
+    obj.set("x", 3);
+    obj.save()
+      .then(() => {
+        const acl = obj.getACL();
+        expect(acl.getPublicReadAccess()).toBe(false);
+        expect(acl.getPublicWriteAccess()).toBe(false);
+        const perms = acl.permissionsById;
+        expect(Object.keys(perms).length).toBe(0);
+        obj2 = new TestClassMA({objectId: obj.id});
+        return obj.fetch()
+      })
+      .then(() => {
+        fail('Should not find the object');
+      }, error => {
+        expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
+        return Promise.resolve();
+      })
+      .then(() => obj2.fetch({useMasterKey: true}))
+      .then(obj => {
+        const acl = new Parse.ACL();
+        acl.setPublicReadAccess(true);
+        acl.setPublicWriteAccess(true);
+        obj.setACL(acl);
+        obj.save(null, {useMasterKey: true})
+          .then(obj => {
+            const acl = obj.getACL();
+            expect(acl.getPublicReadAccess()).toBe(false);
+            expect(acl.getPublicWriteAccess()).toBe(false);
+            const perms = acl.permissionsById;
+            expect(Object.keys(perms).length).toBe(0);
+            done();
+          })
+      })
+  });
+
+  it("should return acl and changed fields correctly with before save trigger and lockDownPublicAccess", function(done) {
+    const TestClassMA = Parse.Object.extend("TestClassMA");
+    Parse.Cloud.setClassConfig('TestClassMA', { lockDownPublicAccess: true });
+    Parse.Cloud.beforeSave('TestClassMA', (request, response) => {
+      request.object.set('newf', 'newv');
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      acl.setPublicWriteAccess(true);
+      request.object.setACL(acl);
+      response.success();
+    });
+
+    var obj = new TestClassMA();
+    obj.set("x", 3);
+    obj.save()
+      .then(() => {
+        const acl = obj.getACL();
+        expect(acl.getPublicReadAccess()).toBe(false);
+        expect(acl.getPublicWriteAccess()).toBe(false);
+        const perms = acl.permissionsById;
+        expect(Object.keys(perms).length).toBe(0);
+        expect(obj.get('newf')).toBe('newv');
+        return obj.fetch()
+      })
+      .then(() => {
+        fail('Should not find the object');
+      }, error => {
+        expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
+        done();
+      })
+  });
 });

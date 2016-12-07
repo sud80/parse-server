@@ -29,7 +29,7 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
   this.auth = auth;
   this.className = className;
   this.clientSDK = clientSDK;
-  this.storage = {};
+  this.storage = {fieldsChangedByTrigger: []};
   this.runOptions = {};
   this.triggerState = {};
 
@@ -53,6 +53,7 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
 
   // The timestamp we'll use for this whole operation
   this.updatedAt = Parse._encode(new Date()).iso;
+  this.classConfig = Parse.Cloud.getClassConfig(this.className) || {};
 }
 
 // A convenient method to perform all the steps of processing the
@@ -61,6 +62,10 @@ function RestWrite(config, auth, className, query, data, originalData, clientSDK
 // status and location are optional.
 RestWrite.prototype.execute = function() {
   return Promise.resolve().then(() => {
+    return this.checkMasterOnlyWriteFields();
+  }).then(() => {
+    return this.checkImmutableFields();
+  }).then(() => {
     return this.getUserAndRoleACL();
   }).then(() => {
     return this.validateClientClassCreation();
@@ -93,6 +98,38 @@ RestWrite.prototype.execute = function() {
   }).then(() => {
     return this.response;
   })
+};
+
+RestWrite.prototype.checkMasterOnlyWriteFields = function() {
+  if (this.auth.isMaster) {
+    return Promise.resolve();
+  }
+  const masterOnlyWriteFields = this.classConfig.masterOnlyWriteFields;
+  if (masterOnlyWriteFields && masterOnlyWriteFields.size > 0) {
+    let field;
+    if (_.some(this.data, (v, k) => {
+        field = k;
+        return masterOnlyWriteFields.has(k);
+      })) {
+      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
+        `This user is not allowed to write ${this.className} ${this.query && this.query.objectId} ${field}`);
+    }
+  }
+};
+
+RestWrite.prototype.checkImmutableFields = function() {
+  const immutableFields = this.classConfig.immutableFields;
+  if (!immutableFields || !this.query || !this.query.objectId) {
+    return;
+  }
+  let field;
+  if (_.some(this.data, (v, k) => {
+      field = k;
+      return immutableFields.has(k);
+    })) {
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
+      `Cannot modify ${field} of ${this.className} ${this.query.objectId}`);
+  }
 };
 
 // Uses the Auth object to get the list of roles, adds the user id
@@ -800,8 +837,14 @@ RestWrite.prototype.runDatabaseOperation = function() {
   if (this.query) {
     // Force the user to not lockout
     // Matched with parse.com
-    if (this.className === '_User' && this.data.ACL) {
-      this.data.ACL[this.query.objectId] = { read: true, write: true };
+    if (this.data.ACL) {
+      if (this.className === '_User') {
+        this.data.ACL[this.query.objectId] = {read: true, write: true};
+      }
+      if (this.classConfig.lockDownPublicAccess && this.data.ACL['*']) {
+        delete this.data.ACL['*'];
+        this.storage.fieldsChangedByTrigger.push('ACL');
+      }
     }
     // Run an update
     return this.config.database.update(this.className, this.query, this.data, this.runOptions)
@@ -811,17 +854,28 @@ RestWrite.prototype.runDatabaseOperation = function() {
       this.response = { response };
     });
   } else {
+    let ACL = this.data.ACL;
     // Set the default ACL for the new _User
     if (this.className === '_User') {
-      var ACL = this.data.ACL;
       // default public r/w ACL
       if (!ACL) {
         ACL = {};
-        ACL['*'] = { read: true, write: false };
+        if (!this.classConfig.lockDownPublicAccess) {
+          ACL['*'] = { read: true, write: false };
+        }
+        this.data.ACL = ACL;
       }
       // make sure the user is not locked down
       ACL[this.data.objectId] = { read: true, write: true };
-      this.data.ACL = ACL;
+    } else if (this.classConfig.lockDownPublicAccess) {
+      if (!ACL) {
+        ACL = {};
+        this.data.ACL = ACL;
+        this.storage.fieldsChangedByTrigger.push('ACL');
+      } else if (ACL['*']) {
+        delete ACL['*'];
+        this.storage.fieldsChangedByTrigger.push('ACL');
+      }
     }
 
     // Run a create

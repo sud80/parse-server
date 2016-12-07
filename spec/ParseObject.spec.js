@@ -1922,4 +1922,69 @@ describe('Parse.Object testing', () => {
       done();
     })
   });
+
+  it('cannot update masterOnlyWriteFields without master key', (done) => {
+    let obj1 = new Parse.Object("AnObject");
+    Parse.Cloud.setClassConfig('AnObject', {masterOnlyWriteFields: new Set(['f1', 'f2'])});
+    obj1.set('f1', 123);
+    obj1.save()
+      .then(() => {
+        fail('cannot update the masterOnlyWriteFields');
+      }, error => {
+        expect(error.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+        return Promise.resolve();
+      })
+      .then(() => obj1.save(null, {useMasterKey: true}))
+      .then(() => {
+        expect(obj1.get('f1')).toBe(123);
+      })
+      .then(() => {
+        obj1.set('f3', 'v3');
+        return obj1.save();
+      })
+      .then(() => {
+        expect(obj1.get('f3')).toBe('v3');
+      })
+      .then(() => {
+        obj1.set('f2', 'v2');
+        return obj1.save();
+      })
+      .then(() => {
+        fail('cannot update the masterOnlyWriteFields');
+      }, error => {
+        expect(error.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+        done();
+      })
+  });
+
+  it('cannot modify immutable fields', (done) => {
+    let obj1 = new Parse.Object("AnObject");
+    Parse.Cloud.setClassConfig('AnObject', {immutableFields: new Set(['f1', 'f2'])});
+    obj1.set('f1', 123);
+    obj1.set('f2', 456);
+    obj1.set('f3', 789);
+    obj1.save()
+      .then(() => {
+        expect(obj1.get('f1')).toBe(123);
+        expect(obj1.get('f2')).toBe(456);
+        expect(obj1.get('f3')).toBe(789);
+        obj1.set('f1', 321);
+        return obj1.save();
+      })
+      .then(() => {
+        fail('cannot change the immutableFields');
+      }, error => {
+        expect(error.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+        return Promise.resolve();
+      })
+      .then(() => obj1.fetch())
+      .then(() => {
+        obj1.set('f3', 321);
+        return obj1.save()
+      })
+      .then(() => {
+        expect(obj1.get('f3')).toBe(321);
+        done();
+      });
+  });
 });

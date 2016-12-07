@@ -12,18 +12,21 @@ var passwordCrypto = require('../src/password');
 var Config = require('../src/Config');
 const rp = require('request-promise');
 
-function verifyACL(user) {
+function verifyACL(user, masterOnly) {
   const ACL = user.getACL();
   expect(ACL.getReadAccess(user)).toBe(true);
   expect(ACL.getWriteAccess(user)).toBe(true);
-  expect(ACL.getPublicReadAccess()).toBe(true);
+  expect(ACL.getPublicReadAccess()).toBe(!masterOnly);
   expect(ACL.getPublicWriteAccess()).toBe(false);
   const perms = ACL.permissionsById;
-  expect(Object.keys(perms).length).toBe(2);
+  const expectedLength = masterOnly ? 1 : 2;
+  expect(Object.keys(perms).length).toBe(expectedLength);
   expect(perms[user.id].read).toBe(true);
   expect(perms[user.id].write).toBe(true);
-  expect(perms['*'].read).toBe(true);
-  expect(perms['*'].write).not.toBe(true);
+  if (!masterOnly) {
+    expect(perms['*'].read).toBe(true);
+    expect(perms['*'].write).not.toBe(true);
+  }
 }
 
 describe('Parse.User testing', () => {
@@ -2783,4 +2786,21 @@ describe('Parse.User testing', () => {
       done();
     });
   });
+
+  it("Lock public key access", (done) => {
+    Parse.Cloud.setClassConfig('_User', {lockDownPublicAccess: true});
+    Parse.User.signUp("asdf", "zxcv", null, {
+      success: function(user) {
+        Parse.User.logIn("asdf", "zxcv", {
+          success: function(user) {
+            equal(user.get("username"), "asdf");
+            verifyACL(user, true);
+            Parse.Cloud.setClassConfig('_User', undefined);
+            done();
+          }
+        });
+      }
+    });
+  });
+
 });
