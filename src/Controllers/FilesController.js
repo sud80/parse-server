@@ -29,7 +29,11 @@ export class FilesController extends AdaptableController {
     filename = randomHexString(32) + '_' + filename;
 
     var location = this.adapter.getFileLocation(config, filename);
-    return this.adapter.createFile(filename, data, contentType).then(() => {
+    let isPublic = true;
+    if (extname === 'json') {
+      isPublic = false;
+    }
+    return this.adapter.createFile(filename, data, contentType, isPublic).then(() => {
       return Promise.resolve({
         url: location,
         name: filename
