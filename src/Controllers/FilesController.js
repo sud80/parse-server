@@ -30,7 +30,7 @@ export class FilesController extends AdaptableController {
 
     var location = this.adapter.getFileLocation(config, filename);
     let isPublic = true;
-    if (extname === 'json') {
+    if (extname === '.json') {
       isPublic = false;
     }
     return this.adapter.createFile(filename, data, contentType, isPublic).then(() => {
